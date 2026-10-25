@@ -84,18 +84,20 @@ async def _guarded(call: Awaitable[T]) -> T:
     """
     try:
         return await call
-    except MacpAckError as exc:
-        text = _coded(exc.failure.code or exc.macp_code, exc.failure.message)
-    except MacpTransportError as exc:
-        text = _coded(exc.macp_code or exc.code, str(exc))
-    except MacpSdkError as exc:
-        text = str(exc)
-    except grpc.RpcError as exc:
+    except (MacpSdkError, grpc.RpcError, ValueError) as exc:
+        return cast(T, _tool_error(error_text(exc)))
+
+
+def error_text(exc: MacpSdkError | grpc.RpcError | ValueError) -> str:
+    """The ``"<CODE>: <message>"`` text for an anticipated failure (see :func:`_guarded`)."""
+    if isinstance(exc, MacpAckError):
+        return _coded(exc.failure.code or exc.macp_code, exc.failure.message)
+    if isinstance(exc, MacpTransportError):
+        return _coded(exc.macp_code or exc.code, str(exc))
+    if isinstance(exc, grpc.RpcError):
         code = macp_error_code(exc) or exc.code().name  # type: ignore[attr-defined]
-        text = _coded(code, exc.details())  # type: ignore[attr-defined]
-    except ValueError as exc:
-        text = str(exc)
-    return cast(T, _tool_error(text))
+        return _coded(code, exc.details())  # type: ignore[attr-defined]
+    return str(exc)
 
 
 def build_server(

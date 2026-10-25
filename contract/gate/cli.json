@@ -1,0 +1,32 @@
+{
+  "contract_version": "1",
+  "command": "macp-mcp gate",
+  "usage": "macp-mcp gate --policy <gate.json> --upstream <command> [args...]",
+  "flags": [
+    {
+      "name": "--policy",
+      "required": true,
+      "value": "PATH",
+      "description": "The gate.json policy file (contract/gate/gate.schema.json)."
+    },
+    {
+      "name": "--upstream",
+      "required": true,
+      "value": "COMMAND [ARGS...]",
+      "description": "The upstream MCP server's stdio command line. Must be the last option: every argument after it belongs to the upstream command."
+    }
+  ],
+  "environment": {
+    "read": ["MACP_RUNTIME_TARGET", "MACP_AGENT_ID", "MACP_AUTH_TOKEN", "MACP_ALLOW_INSECURE", "MACP_TLS_CA_FILE"],
+    "withheld_from_upstream": ["MACP_AUTH_TOKEN"],
+    "note": "The upstream process inherits the gate's environment minus withheld_from_upstream. The gate is the MACP agent MACP_AGENT_ID; it initiates and commits every approval session."
+  },
+  "exit_codes": {
+    "2": "Unusable configuration: bad MACP_* environment, an invalid gate.json, or a missing --upstream command. One line on stderr."
+  },
+  "server": {
+    "name": "macp-mcp-gate",
+    "proxies": ["tools/list", "tools/call"],
+    "instructions": "Some tools on this server are gated by MACP: a call to one opens a MACP session and runs only after the named approvers approve it. A refused call returns an error starting POLICY_DENIED or SESSION_NOT_OPEN; do not retry it unchanged."
+  }
+}

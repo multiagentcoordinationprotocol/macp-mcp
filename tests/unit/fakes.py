@@ -6,6 +6,7 @@ subscribe frame, which is all the bridge needs from the runtime.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from macp.v1 import core_pb2, envelope_pb2
@@ -35,6 +36,7 @@ class FakeStream:
     async def read(self, timeout: float | None = None) -> envelope_pb2.Envelope | None:
         if self._queue:
             return self._queue.pop(0)
+        await asyncio.sleep(0)  # an idle read yields, as a real one waits
         if self.end_with_none:
             return None
         raise MacpTimeoutError("idle")

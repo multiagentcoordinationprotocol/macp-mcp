@@ -38,10 +38,11 @@ test-integration-docker:
 # change, then review the diff. The TypeScript twin vendors this file.
 contract:
 	$(PY) -m macp_mcp._contract > contract/tools.json
+	$(PY) -m macp_mcp.gate._contract > contract/gate/context-id-vectors.json
 
 # CI drift gate: the advertised surface must equal contract/tools.json.
 verify-contract:
-	pytest tests/unit/test_contract.py -v --no-cov
+	pytest tests/unit/test_contract.py tests/unit/test_gate_contract.py -v --no-cov
 
 # Re-record examples/decision-via-mcp.md against a running runtime.
 transcript:
