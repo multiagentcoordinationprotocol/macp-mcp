@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "macp-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "MCP server that lets any MCP client run or join a MACP Decision session"
 readme = "README.md"
 requires-python = ">=3.11"
