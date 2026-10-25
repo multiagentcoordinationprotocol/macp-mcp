@@ -1,0 +1,82 @@
+{
+  "contract_version": "1",
+  "description": "What a gated tool call puts on the MACP wire, and what the MCP caller gets back. Strings with {placeholders} are templates: substitute literally, no other formatting. {server} is gate.json's server, {tool} the tool name, {context_id} and {preimage} as in context-id-vectors.json, {gate} the gate's MACP_AGENT_ID, {threshold} the rule's effective threshold, {session_id} the approval session's id, {state} its SessionState name without the SESSION_STATE_ prefix (EXPIRED, CANCELLED), {runtime_message} the runtime's Ack failure message.",
+  "session_start": {
+    "intent": "Approve MCP tool call {server}/{tool}",
+    "context_id": "{context_id}",
+    "ttl_ms": "rule.ttl_ms",
+    "policy_version": "rule.policy_version, or the runtime default when omitted",
+    "initiator": "{gate}"
+  },
+  "modes": {
+    "macp.mode.quorum.v1": {
+      "participants": "rule.participants",
+      "first_message": {
+        "message_type": "ApprovalRequest",
+        "request_id": "{context_id}",
+        "action": "tools/call:{tool}",
+        "summary": "{server}/{tool}",
+        "details": "UTF-8 bytes of {preimage}",
+        "required_approvals": "{threshold}"
+      },
+      "ballots": "The first Approve / Reject / Abstain from each approver for request_id {context_id} counts (the runtime rejects a second one); Approve is an approval."
+    },
+    "macp.mode.decision.v1": {
+      "participants": "[{gate}] followed by rule.participants; the gate never votes and is not counted",
+      "first_message": {
+        "message_type": "Proposal",
+        "proposal_id": "call",
+        "option": "tools/call:{tool}",
+        "rationale": "{preimage}"
+      },
+      "ballots": "The first Vote from each approver on proposal_id call counts (the runtime rejects a second one); APPROVE (case-insensitive) is an approval, REJECT and ABSTAIN are not."
+    }
+  },
+  "outcome": {
+    "approve_when": "approvals >= {threshold}",
+    "deny_when": "approvals + approvers_yet_to_vote < {threshold}",
+    "counted": "Only ballots from rule.participants."
+  },
+  "commitment": {
+    "approve": {
+      "action": "macp.gate.approve",
+      "outcome_positive": true
+    },
+    "deny": {
+      "action": "macp.gate.deny",
+      "outcome_positive": false
+    },
+    "authority_scope": "tools/call:{server}/{tool}",
+    "reason": "Free text; not part of the contract.",
+    "reported": "The Commitment envelope the runtime records for the session (its payload bytes are what commitment_hash covers)."
+  },
+  "forwarded_result": {
+    "meta_key": "io.multiagentcoordinationprotocol/commitment",
+    "meta_value": {
+      "session_id": "the approval session id",
+      "mode": "rule.mode",
+      "outcome": "approve",
+      "commitment_hash": "RFC-MACP-0013 hash of the recorded Commitment payload"
+    },
+    "note": "Added to the upstream's CallToolResult _meta; every key the upstream set is preserved. outcome is \"approve\" or \"deny\"; only forwarded calls carry the key, so it is always \"approve\" there."
+  },
+  "refusals": {
+    "note": "The upstream is never called. The result is an MCP tool error (isError: true) whose only content is one text block with exactly the rendered template.",
+    "templates": {
+      "denied": "POLICY_DENIED: tool call {tool} denied by session {session_id}",
+      "policy_denied": "POLICY_DENIED: {runtime_message}",
+      "not_open": "SESSION_NOT_OPEN: session {session_id} ended {state} without a commitment",
+      "unsafe_integer": "INVALID_ARGUMENT: tool call {tool} arguments contain an integer outside ±(2^53−1), which has no canonical JSON form"
+    },
+    "cases": {
+      "denied": "The session committed outcome_positive = false (the threshold became unreachable).",
+      "policy_denied": "The runtime rejected the gate's positive Commitment with POLICY_DENIED (a bound RFC-0012 policy); the gate cancels the session.",
+      "not_open": "The session ended EXPIRED or CANCELLED with no Commitment. A session still OPEN at ttl_ms + expiry_grace_ms is cancelled by the gate first, so {state} is CANCELLED there.",
+      "unsafe_integer": "The arguments hold a number that is integral with |v| > 2^53−1 (Python: an int, or a float with is_integer(); TypeScript: Number.isInteger(v) && !Number.isSafeInteger(v)), at any depth. Checked before any session is opened.",
+      "other": "Any other failure (runtime unreachable, a rejected SessionStart, ...) is \"<CODE>: <message>\" with the base server's code precedence: Ack failure code, then the macp-error-code trailer, then the gRPC status name. Not a template; codes and messages vary."
+    }
+  },
+  "timing": {
+    "expiry_grace_ms": 5000
+  }
+}

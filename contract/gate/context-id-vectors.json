@@ -1,0 +1,164 @@
+{
+  "contract_version": "1",
+  "description": "macp-mcp gate context_id vectors. context_id = \"sha256:\" + lowercase hex SHA-256 of the RFC 8785 (JCS) canonical JSON (UTF-8) of {\"arguments\": input.arguments or {}, \"server\": input.server, \"tool\": input.tool}. preimage is that canonical JSON. Numbers are IEEE-754 doubles, as JSON.parse reads them. A vector with expected_error instead of preimage and context_id is refused with exactly that text, before any session is opened.",
+  "vectors": [
+    {
+      "name": "arguments-absent",
+      "note": "Absent arguments hash as {}.",
+      "input": {
+        "server": "filesystem",
+        "tool": "list_allowed_directories"
+      },
+      "preimage": "{\"arguments\":{},\"server\":\"filesystem\",\"tool\":\"list_allowed_directories\"}",
+      "context_id": "sha256:d79291c4a1ee28e189486c939345523709718be643a11d098f2254eae7b3f63a"
+    },
+    {
+      "name": "spec-worked-example",
+      "note": "The worked example in the spec repo's docs/mcp-tool-gating.md.",
+      "input": {
+        "server": "filesystem",
+        "tool": "write_file",
+        "arguments": {
+          "mode": "w",
+          "path": "/etc/hosts"
+        }
+      },
+      "preimage": "{\"arguments\":{\"mode\":\"w\",\"path\":\"/etc/hosts\"},\"server\":\"filesystem\",\"tool\":\"write_file\"}",
+      "context_id": "sha256:e8272f181497f6286a735f2bd9a2bd535b65e377fc85b6ece9d3a6bac5b73057"
+    },
+    {
+      "name": "simple",
+      "note": "Flat string arguments; keys sorted.",
+      "input": {
+        "server": "filesystem",
+        "tool": "write_file",
+        "arguments": {
+          "path": "/srv/reports/q3.md",
+          "content": "Q3 revenue: up 4%"
+        }
+      },
+      "preimage": "{\"arguments\":{\"content\":\"Q3 revenue: up 4%\",\"path\":\"/srv/reports/q3.md\"},\"server\":\"filesystem\",\"tool\":\"write_file\"}",
+      "context_id": "sha256:330ccb8df9d72d67b7d4835a591e313b5882bf79f69726d9fbfd06d896d77196"
+    },
+    {
+      "name": "nested",
+      "note": "Nested objects and arrays, booleans and null; array order is kept.",
+      "input": {
+        "server": "github",
+        "tool": "create_issue",
+        "arguments": {
+          "repo": "acme/api",
+          "labels": [
+            "bug",
+            "p1"
+          ],
+          "assignee": null,
+          "draft": false,
+          "body": {
+            "steps": [
+              3,
+              1,
+              2
+            ],
+            "env": {
+              "os": "linux",
+              "arch": "arm64"
+            }
+          }
+        }
+      },
+      "preimage": "{\"arguments\":{\"assignee\":null,\"body\":{\"env\":{\"arch\":\"arm64\",\"os\":\"linux\"},\"steps\":[3,1,2]},\"draft\":false,\"labels\":[\"bug\",\"p1\"],\"repo\":\"acme/api\"},\"server\":\"github\",\"tool\":\"create_issue\"}",
+      "context_id": "sha256:d7f3bdf9be0c206ff4afa7b605f9f3e9b8386a850b76e2933a09f125dc8b1ce2"
+    },
+    {
+      "name": "numbers",
+      "note": "ECMAScript number formatting: 1.0 -> 1, -0.0 -> 0, small exponents, shortest round-trip, the largest safe integer.",
+      "input": {
+        "server": "payments",
+        "tool": "transfer",
+        "arguments": {
+          "amount": 1250.5,
+          "fee": 0.1,
+          "whole": 1.0,
+          "negzero": -0.0,
+          "small": 1.5e-07,
+          "tiny": 1e-07,
+          "edge": 1e-06,
+          "thirds": 333333333.3333333,
+          "max_safe": 9007199254740991,
+          "neg": -42
+        }
+      },
+      "preimage": "{\"arguments\":{\"amount\":1250.5,\"edge\":0.000001,\"fee\":0.1,\"max_safe\":9007199254740991,\"neg\":-42,\"negzero\":0,\"small\":1.5e-7,\"thirds\":333333333.3333333,\"tiny\":1e-7,\"whole\":1},\"server\":\"payments\",\"tool\":\"transfer\"}",
+      "context_id": "sha256:f5b6ab689bbd1d567b0729312865fc20a4666dc39644a65fdc41636740793482"
+    },
+    {
+      "name": "strings-escapes",
+      "note": "Escapes: quote, backslash, \\b \\f \\n \\r \\t, other controls as \\u00XX; DEL, U+2028, U+2029, '/' and non-ASCII stay literal.",
+      "input": {
+        "server": "mail",
+        "tool": "send",
+        "arguments": {
+          "subject": "Re: \"Q3\" \\ final",
+          "body": "line1\nline2\ttab\u0007bell\u0001soh\b\f\rdel ls ps",
+          "url": "https://example.com/a/b",
+          "to": "zoë@example.com",
+          "greeting": "שלום 😀"
+        }
+      },
+      "preimage": "{\"arguments\":{\"body\":\"line1\\nline2\\ttab\\u0007bell\\u0001soh\\b\\f\\rdel ls ps\",\"greeting\":\"שלום 😀\",\"subject\":\"Re: \\\"Q3\\\" \\\\ final\",\"to\":\"zoë@example.com\",\"url\":\"https://example.com/a/b\"},\"server\":\"mail\",\"tool\":\"send\"}",
+      "context_id": "sha256:fe91dc79441555be100f7e181af5b940e071aeebb8d89eb6bac9127f71f812b9"
+    },
+    {
+      "name": "key-order-utf16",
+      "note": "Keys sort by UTF-16 code units, not code points: U+20AC < U+1F600 (D83D) < U+FB01 < U+FB33.",
+      "input": {
+        "server": "kv",
+        "tool": "put",
+        "arguments": {
+          "דּ": 4,
+          "ﬁ": 3,
+          "😀": 2,
+          "€": 1,
+          "ö": 0,
+          "": 0,
+          "b": 0,
+          "B": 0,
+          "_": 0,
+          "1": 0,
+          "\r": 0,
+          "": 0
+        }
+      },
+      "preimage": "{\"arguments\":{\"\":0,\"\\r\":0,\"1\":0,\"B\":0,\"_\":0,\"b\":0,\"\":0,\"ö\":0,\"€\":1,\"😀\":2,\"ﬁ\":3,\"דּ\":4},\"server\":\"kv\",\"tool\":\"put\"}",
+      "context_id": "sha256:199c7c5bcee590b3c55b44e33c1fed2fcfac4b7d4e54e8f76b4ddb3d8d1ef355"
+    },
+    {
+      "name": "unsafe-integer",
+      "note": "An integer outside ±(2^53−1) has no canonical form: JSON.parse may already have rounded it. The call is refused with expected_error; no session is opened.",
+      "input": {
+        "server": "ledger",
+        "tool": "post_entry",
+        "arguments": {
+          "entry_id": 9007199254740993
+        }
+      },
+      "expected_error": "INVALID_ARGUMENT: tool call post_entry arguments contain an integer outside ±(2^53−1), which has no canonical JSON form"
+    },
+    {
+      "name": "unsafe-integer-exponent",
+      "note": "The same holds for an integral value written with an exponent (1e21), here nested in an array.",
+      "input": {
+        "server": "ledger",
+        "tool": "post_entry",
+        "arguments": {
+          "ids": [
+            1,
+            1e+21
+          ]
+        }
+      },
+      "expected_error": "INVALID_ARGUMENT: tool call post_entry arguments contain an integer outside ±(2^53−1), which has no canonical JSON form"
+    }
+  ]
+}

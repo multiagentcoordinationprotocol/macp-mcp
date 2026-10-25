@@ -1,4 +1,7 @@
-"""Entry point: ``macp-mcp`` / ``python -m macp_mcp`` (stdio transport)."""
+"""Entry point: ``macp-mcp`` / ``python -m macp_mcp`` (stdio transport).
+
+``macp-mcp gate ...`` runs the tool-call gate instead (:mod:`macp_mcp.gate.cli`).
+"""
 
 from __future__ import annotations
 
@@ -11,6 +14,11 @@ from .config import ConfigError, load_settings
 def main() -> None:
     # stdout carries the MCP protocol; every log line must go to stderr.
     logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+    if sys.argv[1:2] == ["gate"]:
+        from .gate.cli import main as gate_main
+
+        gate_main(sys.argv[2:])
+        return
     try:
         settings = load_settings()
     except ConfigError as exc:

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "server": "filesystem",
+  "rules": [
+    {
+      "tool": "write_file",
+      "mode": "macp.mode.quorum.v1",
+      "participants": ["alice", "bob", "carol"],
+      "threshold": 2,
+      "ttl_ms": 120000,
+      "policy_version": "policy.packs.two-agent-rule",
+      "description": "Four eyes on every write: two of three reviewers approve."
+    },
+    {
+      "tool": "move_*",
+      "mode": "macp.mode.decision.v1",
+      "participants": ["alice", "bob"],
+      "ttl_ms": 60000,
+      "description": "Moves and renames need a majority vote (2 of 2)."
+    }
+  ]
+}

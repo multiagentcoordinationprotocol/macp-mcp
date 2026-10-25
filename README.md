@@ -162,6 +162,71 @@ then the gRPC status name).
 The server is stateless. Every read replays the session from the runtime, so a
 restart loses nothing, and several servers (agents) can share one session.
 
+## Gate an MCP server's tool calls (`macp-mcp gate`)
+
+`macp-mcp gate` is an MCP proxy. Put it in front of any stdio MCP server, and
+the tool calls you name in a policy file run only after a MACP session
+approves them:
+
+```bash
+macp-mcp gate --policy gate.json --upstream npx -y @modelcontextprotocol/server-filesystem /srv
+```
+
+Everything after `--upstream` is the upstream's command line. Your MCP client
+spawns the gate instead of the upstream. The gate lists the upstream's tools
+unchanged.
+
+```json
+{
+  "version": 1,
+  "server": "filesystem",
+  "rules": [
+    { "tool": "write_file", "mode": "macp.mode.quorum.v1",
+      "participants": ["alice", "bob", "carol"], "threshold": 2, "ttl_ms": 120000 },
+    { "tool": "move_*", "mode": "macp.mode.decision.v1",
+      "participants": ["alice", "bob"], "ttl_ms": 60000 }
+  ]
+}
+```
+
+A `tools/call` that matches no rule is forwarded as-is. The first rule that
+matches (`*` and `?` are wildcards) makes the gate, acting as MACP agent
+`MACP_AGENT_ID`, do this:
+
+1. Open a Quorum or Decision session with the rule's `participants` as
+   approvers. Its `context_id` is `sha256:` plus the hex SHA-256 of the RFC 8785
+   canonical JSON of `{arguments, server, tool}`, which binds the session to this
+   exact call. The approvers find it by that `context_id` (`ListSessions` /
+   `WatchSessions`) and vote with any MACP client.
+2. Commit as soon as the outcome is settled: approve once `threshold` approvers
+   (default: a strict majority) have approved, deny once that can no longer
+   happen. Each approver's first ballot counts.
+3. **Approved:** forward the call. The upstream's result comes back with the
+   Commitment attached, next to any `_meta` the upstream set:
+
+   ```json
+   "_meta": { "io.multiagentcoordinationprotocol/commitment": {
+     "session_id": "…", "mode": "macp.mode.quorum.v1", "outcome": "approve",
+     "commitment_hash": "sha256:…" } }
+   ```
+
+   `commitment_hash` is the RFC-MACP-0013 hash. Check it with the `verify` tool
+   or any MACP SDK.
+4. **Refused:** return a tool error and never call the upstream. The error
+   starts with `POLICY_DENIED` (the approvers denied it, or a runtime policy
+   refused the commitment) or `SESSION_NOT_OPEN` (the session expired or was
+   cancelled first). An argument holding an integer outside ±(2^53−1) is
+   refused with `INVALID_ARGUMENT` before any session opens, because it has no
+   canonical form to bind.
+
+The gate passes its environment on to the upstream, minus `MACP_AUTH_TOKEN`.
+[`examples/gated-tool-call.md`](examples/gated-tool-call.md) is a recorded run
+against the pinned runtime: one passthrough, one approved write, one rejected
+write and one expired delete.
+[`contract/gate/`](contract/gate) pins the policy schema, the CLI, the session
+shape, the refusal texts and the `context_id` vectors. The TypeScript twin
+uses a byte-identical copy.
+
 ## Tool contract
 
 [`contract/tools.json`](contract/tools.json) pins the tool names,
@@ -177,9 +242,9 @@ and needs the matching change in the TypeScript twin.
 ```bash
 make setup                    # pip install -e ".[dev]"
 make lint typecheck test      # ruff, mypy strict, unit tests + 85% coverage gate
-make verify-contract          # advertised tools == contract/tools.json
+make verify-contract          # advertised tools == contract/tools.json; gate contract checks
 make test-integration-docker  # CI's integration gate: pinned runtime image + stdio MCP clients
-make transcript               # re-record examples/decision-via-mcp.md (runtime on :50051)
+make transcript               # re-record examples/*.md transcripts (runtime on :50051)
 ```
 
 Releases follow macp-sdk-python: release-please opens the release PR, and
