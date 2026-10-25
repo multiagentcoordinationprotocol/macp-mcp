@@ -9,7 +9,11 @@ TypeScript twin tests against the same file.
 
 from __future__ import annotations
 
-from typing import Literal, NotRequired, TypedDict
+from typing import Literal, NotRequired
+
+# pydantic needs typing_extensions.TypedDict on Python < 3.12 to build the
+# output schema (typing.TypedDict lacks the runtime info it reads there).
+from typing_extensions import TypedDict
 
 VerifyOutcome = Literal["match", "mismatch", "cannot_verify"]
 VerifySource = Literal["runtime_history", "payload_b64"]

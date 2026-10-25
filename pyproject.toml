@@ -30,6 +30,8 @@ dependencies = [
   # Official MCP Python SDK. 2.x renamed FastMCP to mcp.server.mcpserver.MCPServer;
   # this package is written against the 2.x API.
   "mcp>=2.3.0,<3",
+  # TypedDict for tool results: pydantic rejects typing.TypedDict on 3.11.
+  "typing-extensions>=4.12",
 ]
 
 [project.scripts]
