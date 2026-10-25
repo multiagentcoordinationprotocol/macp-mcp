@@ -35,6 +35,15 @@ INPUTS: list[tuple[str, str, dict[str, Any]]] = [
         {"server": "filesystem", "tool": "list_allowed_directories"},
     ),
     (
+        "spec-worked-example",
+        "The worked example in the spec repo's docs/mcp-tool-gating.md.",
+        {
+            "server": "filesystem",
+            "tool": "write_file",
+            "arguments": {"mode": "w", "path": "/etc/hosts"},
+        },
+    ),
+    (
         "simple",
         "Flat string arguments; keys sorted.",
         {

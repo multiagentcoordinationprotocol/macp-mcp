@@ -44,6 +44,11 @@ def build() -> MCPServer:
         _record("read_file", {"path": path})
         return f"contents of {path}"
 
+    @server.tool(description="Delete a file (stub).")
+    def delete_file(path: str) -> str:
+        _record("delete_file", {"path": path})
+        return f"deleted {path}"
+
     @server.tool(description="Leak the environment variable names (stub).")
     def env_names() -> str:
         return json.dumps(sorted(os.environ))

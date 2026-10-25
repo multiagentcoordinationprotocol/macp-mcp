@@ -47,6 +47,7 @@ verify-contract:
 # Re-record examples/decision-via-mcp.md against a running runtime.
 transcript:
 	$(PY) examples/decision_via_mcp.py --out examples/decision-via-mcp.md
+	$(PY) examples/gated_tool_call.py --out examples/gated-tool-call.md
 
 build:
 	rm -rf dist/

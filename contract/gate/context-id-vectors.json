@@ -13,6 +13,20 @@
       "context_id": "sha256:d79291c4a1ee28e189486c939345523709718be643a11d098f2254eae7b3f63a"
     },
     {
+      "name": "spec-worked-example",
+      "note": "The worked example in the spec repo's docs/mcp-tool-gating.md.",
+      "input": {
+        "server": "filesystem",
+        "tool": "write_file",
+        "arguments": {
+          "mode": "w",
+          "path": "/etc/hosts"
+        }
+      },
+      "preimage": "{\"arguments\":{\"mode\":\"w\",\"path\":\"/etc/hosts\"},\"server\":\"filesystem\",\"tool\":\"write_file\"}",
+      "context_id": "sha256:e8272f181497f6286a735f2bd9a2bd535b65e377fc85b6ece9d3a6bac5b73057"
+    },
+    {
       "name": "simple",
       "note": "Flat string arguments; keys sorted.",
       "input": {
