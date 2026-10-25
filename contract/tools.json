@@ -1,0 +1,819 @@
+{
+  "contract_version": "1",
+  "json_schema_dialect": "https://json-schema.org/draft/2020-12/schema",
+  "server_name": "macp-mcp",
+  "instructions": "These tools let you run or join a MACP Decision session (macp.mode.decision.v1):\na bounded, auditable vote among named agents that ends in one binding Commitment.\nYou act as the MACP agent named in the `you` / `sender` fields of tool results.\n\nTypical loop:\n1. start_session (initiator) -> share the returned session_id with the other participants.\n2. propose an option; participants evaluate (optional) and vote on it.\n3. get_session to see proposals, votes and the majority winner.\n4. commit (the initiator) to resolve the session with the outcome.\n5. get_commitment returns the binding outcome and its RFC-MACP-0013 commitment hash;\n   verify recomputes that hash from the payload bytes the runtime recorded.\n\nTo join a session someone else started, you only need its session_id and to be a participant.\nThe runtime enforces membership, ordering and identity; a rejected action returns an error.",
+  "tools": [
+    {
+      "name": "commit",
+      "description": "Resolve the session with a binding Commitment (normally the initiator).\n\nAfter this the session is RESOLVED and accepts no further messages.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "description": "The decided action, e.g. 'deployment.approved'.",
+            "type": "string"
+          },
+          "authority_scope": {
+            "description": "The scope of authority the decision binds, e.g. 'release'.",
+            "type": "string"
+          },
+          "outcome_positive": {
+            "default": true,
+            "description": "False when the decision is a rejection.",
+            "type": "boolean"
+          },
+          "reason": {
+            "description": "Why, e.g. which proposal won the vote.",
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The MACP session id (from start_session).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "authority_scope",
+          "reason",
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "session_state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "duplicate",
+          "message_id",
+          "ok",
+          "sender",
+          "session_id",
+          "session_state"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "evaluate",
+      "description": "Record a scored assessment of a proposal before voting (optional step).",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "confidence": {
+            "description": "Confidence from 0.0 to 1.0.",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "proposal_id": {
+            "description": "Short identifier for the proposal, unique within the session.",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "description": "Why.",
+            "type": "string"
+          },
+          "recommendation": {
+            "description": "Your assessment of the proposal.",
+            "enum": [
+              "APPROVE",
+              "REVIEW",
+              "BLOCK",
+              "REJECT"
+            ],
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The MACP session id (from start_session).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confidence",
+          "proposal_id",
+          "recommendation",
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "proposal_id": {
+            "type": "string"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "session_state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "duplicate",
+          "message_id",
+          "ok",
+          "proposal_id",
+          "sender",
+          "session_id",
+          "session_state"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_commitment",
+      "description": "Return a resolved session's binding Commitment and its RFC-MACP-0013 hash.\n\n`found` is false while the session is still open. `payload_b64` is the exact\nCommitment payload bytes the runtime recorded; `commitment_hash` is computed over them.",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "description": "The MACP session id (from start_session).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "commitment": {
+            "properties": {
+              "action": {
+                "type": "string"
+              },
+              "authority_scope": {
+                "type": "string"
+              },
+              "commitment_id": {
+                "type": "string"
+              },
+              "configuration_version": {
+                "type": "string"
+              },
+              "mode_version": {
+                "type": "string"
+              },
+              "outcome_positive": {
+                "type": "boolean"
+              },
+              "policy_version": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "supersedes": {
+                "properties": {
+                  "commitment_hash": {
+                    "type": "string"
+                  },
+                  "session_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "commitment_hash",
+                  "session_id"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "action",
+              "authority_scope",
+              "commitment_id",
+              "configuration_version",
+              "mode_version",
+              "outcome_positive",
+              "policy_version",
+              "reason"
+            ],
+            "type": "object"
+          },
+          "commitment_hash": {
+            "type": "string"
+          },
+          "found": {
+            "type": "boolean"
+          },
+          "hash_label": {
+            "type": "string"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "payload_b64": {
+            "type": "string"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "found",
+          "session_id",
+          "state"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_session",
+      "description": "Show a session's state, participants, proposals, evaluations, votes and winner.\n\nReads the runtime's session history, so it includes every participant's messages.",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "session_id": {
+            "description": "The MACP session id (from start_session).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "approve_totals": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "blocking_objection": {
+            "type": "boolean"
+          },
+          "committed": {
+            "type": "boolean"
+          },
+          "configuration_version": {
+            "type": "string"
+          },
+          "evaluations": {
+            "items": {
+              "properties": {
+                "confidence": {
+                  "type": "number"
+                },
+                "proposal_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "recommendation": {
+                  "type": "string"
+                },
+                "sender": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "confidence",
+                "proposal_id",
+                "reason",
+                "recommendation",
+                "sender"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "expires_at_unix_ms": {
+            "type": "integer"
+          },
+          "history": {
+            "items": {
+              "properties": {
+                "message_id": {
+                  "type": "string"
+                },
+                "message_type": {
+                  "type": "string"
+                },
+                "sender": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message_id",
+                "message_type",
+                "sender"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "initiator": {
+            "type": "string"
+          },
+          "majority_winner": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mode": {
+            "type": "string"
+          },
+          "mode_version": {
+            "type": "string"
+          },
+          "objections": {
+            "items": {
+              "properties": {
+                "proposal_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sender": {
+                  "type": "string"
+                },
+                "severity": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "proposal_id",
+                "reason",
+                "sender",
+                "severity"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "participants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "policy_version": {
+            "type": "string"
+          },
+          "proposals": {
+            "items": {
+              "properties": {
+                "option": {
+                  "type": "string"
+                },
+                "proposal_id": {
+                  "type": "string"
+                },
+                "rationale": {
+                  "type": "string"
+                },
+                "sender": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "option",
+                "proposal_id",
+                "rationale",
+                "sender"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "started_at_unix_ms": {
+            "type": "integer"
+          },
+          "state": {
+            "type": "string"
+          },
+          "votes": {
+            "items": {
+              "properties": {
+                "proposal_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "sender": {
+                  "type": "string"
+                },
+                "vote": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "proposal_id",
+                "reason",
+                "sender",
+                "vote"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "you": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve_totals",
+          "blocking_objection",
+          "committed",
+          "configuration_version",
+          "evaluations",
+          "expires_at_unix_ms",
+          "history",
+          "initiator",
+          "majority_winner",
+          "mode",
+          "mode_version",
+          "objections",
+          "participants",
+          "phase",
+          "policy_version",
+          "proposals",
+          "session_id",
+          "started_at_unix_ms",
+          "state",
+          "votes",
+          "you"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "propose",
+      "description": "Put an option up for decision in a session.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "option": {
+            "description": "The option being proposed.",
+            "type": "string"
+          },
+          "proposal_id": {
+            "description": "Short identifier for the proposal, unique within the session.",
+            "type": "string"
+          },
+          "rationale": {
+            "default": "",
+            "description": "Why this option.",
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The MACP session id (from start_session).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "option",
+          "proposal_id",
+          "session_id"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "proposal_id": {
+            "type": "string"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "session_state": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "duplicate",
+          "message_id",
+          "ok",
+          "proposal_id",
+          "sender",
+          "session_id",
+          "session_state"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "start_session",
+      "description": "Start a new MACP Decision session with this agent as initiator.\n\nReturns the new session_id; share it with the other participants so they can join.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "context_id": {
+            "default": "",
+            "description": "Optional opaque reference to external context.",
+            "type": "string"
+          },
+          "intent": {
+            "description": "What the group is deciding, in one sentence.",
+            "type": "string"
+          },
+          "participants": {
+            "description": "MACP agent ids allowed to act in the session. This agent is added automatically if missing.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "ttl_ms": {
+            "default": 0,
+            "description": "Session time-to-live in milliseconds; 0 uses the server default.",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "intent",
+          "participants"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "initiator": {
+            "type": "string"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "participants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "session_state": {
+            "type": "string"
+          },
+          "ttl_ms": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "duplicate",
+          "initiator",
+          "message_id",
+          "mode",
+          "ok",
+          "participants",
+          "session_id",
+          "session_state",
+          "ttl_ms"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "verify",
+      "description": "Check a commitment hash by recomputing it (RFC-MACP-0013).\n\nPass exactly one of session_id or payload_b64. `outcome` is `match`, `mismatch`, or\n`cannot_verify` (the payload itself is not hashable under the label).",
+      "annotations": {
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "commitment_hash": {
+            "description": "The claimed hash, 'sha256:' followed by 64 hex digits.",
+            "type": "string"
+          },
+          "payload_b64": {
+            "default": "",
+            "description": "Or: base64 Commitment payload bytes you already hold.",
+            "type": "string"
+          },
+          "session_id": {
+            "default": "",
+            "description": "Re-fetch the Commitment from this session's runtime history.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "commitment_hash"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "claimed_hash": {
+            "type": "string"
+          },
+          "hash_label": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "match",
+              "mismatch",
+              "cannot_verify"
+            ],
+            "type": "string"
+          },
+          "recomputed_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "runtime_history",
+              "payload_b64"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "claimed_hash",
+          "hash_label",
+          "outcome",
+          "recomputed_hash",
+          "source"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "vote",
+      "description": "Cast this agent's vote on a proposal. One vote per agent per proposal.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "inputSchema": {
+        "properties": {
+          "proposal_id": {
+            "description": "Short identifier for the proposal, unique within the session.",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "description": "Why.",
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The MACP session id (from start_session).",
+            "type": "string"
+          },
+          "vote": {
+            "description": "Your vote.",
+            "enum": [
+              "APPROVE",
+              "REJECT",
+              "ABSTAIN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "proposal_id",
+          "session_id",
+          "vote"
+        ],
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "ok": {
+            "type": "boolean"
+          },
+          "proposal_id": {
+            "type": "string"
+          },
+          "sender": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "session_state": {
+            "type": "string"
+          },
+          "vote": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "duplicate",
+          "message_id",
+          "ok",
+          "proposal_id",
+          "sender",
+          "session_id",
+          "session_state",
+          "vote"
+        ],
+        "type": "object"
+      }
+    }
+  ]
+}
