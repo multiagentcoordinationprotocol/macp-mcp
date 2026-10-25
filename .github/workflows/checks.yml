@@ -1,0 +1,53 @@
+# Reusable quality gate shared by ci.yml (push/PR) and publish.yml (release).
+# The coverage gate (fail_under, branch) lives in pyproject.toml
+# [tool.coverage.*]; the bare --cov below inherits it.
+#
+# Mirrored by the `lint` / `typecheck` / `test` / `verify-contract` Makefile
+# targets: change a step here, change the target too.
+name: Checks
+
+on:
+  workflow_call:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check src/ tests/ examples/
+      - run: ruff format --check src/ tests/ examples/
+
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: mypy src/macp_mcp/
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      # Includes tests/unit/test_contract.py: the advertised tool surface must
+      # equal contract/tools.json, the manifest the TypeScript twin vendors.
+      - run: pytest tests/unit/ -v --cov

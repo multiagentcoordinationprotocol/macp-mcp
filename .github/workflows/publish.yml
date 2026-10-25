@@ -1,0 +1,78 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build only; skip twine upload"
+        required: false
+        default: "false"
+
+jobs:
+  # Full quality gate (lint / typecheck / test matrix / contract) — shared
+  # with ci.yml via the reusable workflow.
+  checks:
+    uses: ./.github/workflows/checks.yml
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [checks]
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install build twine
+      - name: Read package version
+        id: version
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Guard tag matches pyproject version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          pkg_version="${{ steps.version.outputs.version }}"
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "Tag $tag_version does not match pyproject version $pkg_version" >&2
+            exit 1
+          fi
+      - run: python -m build
+      - run: twine check dist/*
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+
+  # PyPI trusted publishing (OIDC) — this job must stay in this workflow file
+  # under the `pypi` environment; the publisher config on PyPI pins the repo,
+  # workflow filename, and environment name.
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && github.event.inputs.dry_run != 'true' }}
+    environment:
+      name: pypi
+      url: https://pypi.org/project/macp-mcp/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI via trusted publisher
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/
+          skip-existing: true

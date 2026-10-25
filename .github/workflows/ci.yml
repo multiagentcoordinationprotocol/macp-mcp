@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # lint / typecheck / unit-test matrix / contract: see checks.yml.
+  # Integration runs in the sibling job below, not in checks.yml: publish.yml
+  # also calls checks.yml, and a release must not depend on pulling a runtime
+  # container from GHCR.
+  checks:
+    uses: ./.github/workflows/checks.yml
+
+  # An MCP client drives a Decision session to RESOLVED over stdio against the
+  # pinned runtime image, then verifies the commitment hash. Keep the image in
+  # sync with the Makefile's test-integration-docker target.
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    services:
+      runtime:
+        image: ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0
+        env:
+          # The image deliberately omits MACP_ALLOW_INSECURE; without it the
+          # runtime refuses to start and the readiness poll below fails.
+          MACP_ALLOW_INSECURE: "1"
+          MACP_MEMORY_ONLY: "1"
+          MACP_BIND_ADDR: "0.0.0.0:50051"
+        ports: ["50051:50051"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[dev]"
+
+      # conftest.py skips the directory when no runtime answers, so without
+      # this a runtime that never binds would be a green run that tested
+      # nothing.
+      - name: Wait for runtime
+        run: |
+          for i in $(seq 1 30); do nc -z localhost 50051 && break; sleep 1; done
+          nc -z localhost 50051 || { echo "::error::runtime never became ready"; exit 1; }
+
+      - name: Integration tests
+        env:
+          MACP_RUNTIME_TARGET: 127.0.0.1:50051
+        run: |
+          set -o pipefail
+          pytest tests/integration/ -m integration --no-cov -v -rs | tee integration.log
+
+      - name: Assert the suite ran
+        run: |
+          summary=$(tail -n 1 integration.log)
+          echo "$summary"
+          echo "$summary" | grep -qE '[1-9][0-9]* passed' || { echo "::error::no tests passed"; exit 1; }
+          if echo "$summary" | grep -qE '[0-9]+ skipped'; then echo "::error::integration tests skipped"; exit 1; fi
+
+      # The run's own transcript, for comparison with examples/decision-via-mcp.md.
+      - name: Record transcript
+        env:
+          MACP_RUNTIME_TARGET: 127.0.0.1:50051
+        run: python examples/decision_via_mcp.py --out decision-via-mcp.md
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: decision-via-mcp
+          path: decision-via-mcp.md
+
+  # Mirrored by the `build` Makefile target.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [checks]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check dist/*
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
