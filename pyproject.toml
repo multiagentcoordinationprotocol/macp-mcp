@@ -26,7 +26,7 @@ classifiers = [
 dependencies = [
   # The published MACP Python SDK: AsyncMacpClient + AsyncDecisionSession
   # (0.18.0) and the RFC-MACP-0013 commitment-hash verifier.
-  "macp-sdk-python>=0.18.0,<0.19",
+  "macp-sdk-python>=0.18.0,<0.23",
   # Official MCP Python SDK. 2.x renamed FastMCP to mcp.server.mcpserver.MCPServer;
   # this package is written against the 2.x API.
   "mcp>=2.3.0,<3",
