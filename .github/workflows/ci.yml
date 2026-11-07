@@ -30,7 +30,7 @@ jobs:
       packages: read
     services:
       runtime:
-        image: ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0
+        image: ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0
         env:
           # The image deliberately omits MACP_ALLOW_INSECURE; without it the
           # runtime refuses to start and the readiness poll below fails.

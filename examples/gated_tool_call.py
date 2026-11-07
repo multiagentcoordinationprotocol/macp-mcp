@@ -17,7 +17,7 @@ gate runs as MACP agent ``gate``; the approvers ``alice``, ``bob`` and
 Needs a runtime::
 
     docker run -p 50051:50051 -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 \\
-        ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0
+        ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0
 
 Then::
 
@@ -264,7 +264,7 @@ def render_markdown(t: Transcript) -> str:
         "`integration` job runs (`tests/integration/test_gate.py`).",
         "",
         "An MCP client spawned `macp-mcp gate` over **stdio** in front of a stub upstream",
-        "MCP server, against `ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0`.",
+        "MCP server, against `ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0`.",
         "The gate is MACP agent `gate`; `alice`, `bob` and `carol` are approvers using the",
         "MACP SDK directly. Ids and hashes differ on every run.",
         "",

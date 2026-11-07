@@ -8,7 +8,7 @@ tools. Finishes by recomputing the RFC-MACP-0013 commitment hash.
 Needs a runtime::
 
     docker run -p 50051:50051 -e MACP_ALLOW_INSECURE=1 -e MACP_MEMORY_ONLY=1 \\
-        ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0
+        ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0
 
 Then::
 
@@ -215,7 +215,7 @@ def render_markdown(t: Transcript) -> str:
         "`integration` job runs (`tests/integration/test_decision_via_mcp.py`).",
         "",
         "Two `macp-mcp` servers were spawned over **stdio**, one per MACP agent, against",
-        "`ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0`. Every step below is",
+        "`ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0`. Every step below is",
         "one MCP `tools/call`. The JSON shown is the tool's structured result, unedited;",
         "ids and hashes differ on every run.",
         "",
