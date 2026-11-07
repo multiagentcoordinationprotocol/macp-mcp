@@ -1,7 +1,7 @@
 .PHONY: setup lint fmt typecheck test test-integration test-integration-docker contract verify-contract transcript build test-all
 
 PY ?= python
-RUNTIME_IMAGE ?= ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.9.0
+RUNTIME_IMAGE ?= ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0
 RUNTIME_PORT ?= 50051
 
 setup:
