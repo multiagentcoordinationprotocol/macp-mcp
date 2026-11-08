@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/multiagentcoordinationprotocol/macp-mcp/compare/v0.2.0...v0.3.0) (2026-11-08)
+
+
+### Bug Fixes
+
+* **docs:** document the Quorum gate threshold when a stricter policy is bound ([#13](https://github.com/multiagentcoordinationprotocol/macp-mcp/issues/13)) ([caab8b2](https://github.com/multiagentcoordinationprotocol/macp-mcp/commit/caab8b20e55535e35e5e69e9cf20a534ad675205))
+
+
+### Dependencies
+
+* require macp-sdk-python &gt;=0.23.2,&lt;0.24 (0.2.0 required &lt;0.23) ([#10](https://github.com/multiagentcoordinationprotocol/macp-mcp/issues/10)) ([caab8b2](https://github.com/multiagentcoordinationprotocol/macp-mcp/commit/caab8b20e55535e35e5e69e9cf20a534ad675205))
+* test against macp-runtime 0.14.0, including a policy-refused gate commit ([#11](https://github.com/multiagentcoordinationprotocol/macp-mcp/issues/11), [#12](https://github.com/multiagentcoordinationprotocol/macp-mcp/issues/12)) ([caab8b2](https://github.com/multiagentcoordinationprotocol/macp-mcp/commit/caab8b20e55535e35e5e69e9cf20a534ad675205))
+
 ## [0.2.0](https://github.com/multiagentcoordinationprotocol/macp-mcp/compare/v0.1.0...v0.2.0) (2026-10-25)
 
 
