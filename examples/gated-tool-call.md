@@ -4,7 +4,7 @@ Recorded output of `python examples/gated_tool_call.py`, the same driver the CI
 `integration` job runs (`tests/integration/test_gate.py`).
 
 An MCP client spawned `macp-mcp gate` over **stdio** in front of a stub upstream
-MCP server, against `ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0`.
+MCP server, against `ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.1`.
 The gate is MACP agent `gate`; `alice`, `bob` and `carol` are approvers using the
 MACP SDK directly. Ids and hashes differ on every run.
 

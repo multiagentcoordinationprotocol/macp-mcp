@@ -4,7 +4,7 @@ Recorded output of `python examples/decision_via_mcp.py`, the same driver the CI
 `integration` job runs (`tests/integration/test_decision_via_mcp.py`).
 
 Two `macp-mcp` servers were spawned over **stdio**, one per MACP agent, against
-`ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.0`. Every step below is
+`ghcr.io/multiagentcoordinationprotocol/macp-runtime:0.14.1`. Every step below is
 one MCP `tools/call`. The JSON shown is the tool's structured result, unedited;
 ids and hashes differ on every run.
 
