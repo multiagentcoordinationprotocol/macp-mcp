@@ -227,6 +227,29 @@ write and one expired delete.
 shape, the refusal texts and the `context_id` vectors. The TypeScript twin
 uses a byte-identical copy.
 
+### Binding a runtime policy (`policy_version`)
+
+A rule can bind the session, through `policy_version`, to an RFC-MACP-0012
+policy registered on the runtime. **Set the rule's `threshold` to at least the
+bound policy's threshold.** The gate commits on its own tally, so with a lower
+rule threshold it commits early and the runtime refuses the Commitment:
+
+- **Decision:** the refusal is `POLICY_DENIED: <runtime message>`.
+- **Quorum:** macp-runtime 0.14.0 applies a policy threshold inside the mode's
+  commitment-readiness check, so the refusal is `INVALID_ENVELOPE` (an invalid
+  payload), not `POLICY_DENIED`.
+
+In both modes the gate fails safe. The call is refused after the first
+approval, the upstream is never called, and the gate cancels the session
+(CANCELLED). The note under `policy_binding` in
+[`contract/gate/session.json`](contract/gate/session.json) records the same
+behaviour. Integration tests pin it against runtime 0.14.0:
+[`tests/integration/test_gate_policy.py`](tests/integration/test_gate_policy.py)
+(added in [#12](https://github.com/multiagentcoordinationprotocol/macp-mcp/pull/12))
+and the TypeScript twin's
+[`gate-policy.test.ts`](https://github.com/multiagentcoordinationprotocol/macp-mcp-typescript/blob/main/tests/integration/gate-policy.test.ts)
+([#10](https://github.com/multiagentcoordinationprotocol/macp-mcp-typescript/pull/10)).
+
 ## Tool contract
 
 [`contract/tools.json`](contract/tools.json) pins the tool names,
