@@ -76,6 +76,9 @@
       "other": "Any other failure (runtime unreachable, a rejected SessionStart, ...) is \"<CODE>: <message>\" with the base server's code precedence: Ack failure code, then the macp-error-code trailer, then the gRPC status name. Not a template; codes and messages vary."
     }
   },
+  "policy_binding": {
+    "note": "Non-normative. rule.policy_version can bind an RFC-MACP-0012 policy that needs more approvals than rule.threshold. The gate still commits on its own tally, so set rule.threshold to at least the bound policy's threshold. If it is lower, the gate commits after the first {threshold} approvals and the runtime refuses the Commitment. Decision: the refusal is POLICY_DENIED (the policy_denied case). Quorum: macp-runtime 0.14.0 applies a policy threshold inside the mode's commitment-readiness check, so the refusal is INVALID_ENVELOPE (InvalidPayload), not POLICY_DENIED, and surfaces as the other case. Either way the gate fails safe: the call is refused, the upstream is never called, and the gate cancels the session (CANCELLED)."
+  },
   "timing": {
     "expiry_grace_ms": 5000
   }
